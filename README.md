@@ -22,7 +22,7 @@ You still have to install the OS and tools he describes in his guide.
  - MAC addresses in main.tf
 - Execute:
 
-`cd okd4-esxi-infra`
+`cd okd4-esxi-infra/terraform`
 
 `terraform init`
 
