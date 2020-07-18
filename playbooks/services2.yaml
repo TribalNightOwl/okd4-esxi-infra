@@ -1,0 +1,169 @@
+---
+- hosts: okd4-services
+  remote_user: okdadmin
+  become: yes
+  tasks:
+
+# BIND
+  - name: install bind
+    dnf:
+      name:
+        - bind
+        - bind-utils
+      state: latest
+      update_cache: yes
+
+  - name: Copy named.conf
+    copy:
+      src: ../okd4_files/named.conf
+      dest: /etc/named.conf
+      owner: root
+      group: root
+      mode: '0644'
+    notify: restart named
+
+  - name: Copy named.conf.local
+    copy:
+      src: ../okd4_files/named.conf.local
+      dest: /etc/named/
+      owner: root
+      group: root
+      mode: '0644'
+    notify: restart named
+
+  - name: Create a named zones directory
+    file:
+      path: /etc/named/zones
+      state: directory
+      mode: '0755'
+    notify: restart named
+
+  - name: Copy zone files
+    copy:
+      src: ../okd4_files/{{ item }}
+      dest: /etc/named/zones/
+      owner: root
+      group: root
+      mode: '0644'
+    with_items:
+      - db.192.168.90
+      - db.okd.local
+    notify: restart named
+
+  - name: enable named
+    systemd:
+      name: named
+      state: started
+      enabled: yes
+
+  - name: restart systemctl
+    systemd:
+      daemon_reexec: yes
+
+  - firewalld:
+      port: 53/udp
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+# HAProxy
+  - name: install ha-proxy
+    dnf:
+      name: haproxy
+      state: latest
+      update_cache: yes
+
+  - name: enable SELinux HAProxy
+    seboolean:
+      name: haproxy_connect_any
+      state: yes
+      persistent: yes
+
+  - name: Copy HAProxy config
+    copy:
+      src: ../okd4_files/haproxy.cfg
+      dest: /etc/haproxy/haproxy.cfg
+      owner: root
+      group: root
+      mode: '0644'
+    notify: restart haproxy
+
+  - name: enable HAProxy
+    systemd:
+      name: haproxy
+      state: started
+      enabled: yes
+
+  - firewalld:
+      port: 6443/tcp
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+  - firewalld:
+      port: 22623/tcp
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+  - firewalld:
+      service: http
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+  - firewalld:
+      service: https
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+# Apache/HTTP
+  - name: install httpd
+    dnf:
+      name: httpd
+      state: latest
+      update_cache: yes
+
+  - name: enable SELinux http read
+    seboolean:
+      name: httpd_read_user_content
+      state: yes
+      persistent: yes
+
+  - name: Ensure the default Apache port is 8080
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^Listen '
+      insertafter: '^#Listen '
+      line: Listen 8080
+    notify: restart httpd
+
+  - name: enable httpd
+    systemd:
+      name: httpd
+      state: started
+      enabled: yes
+
+  - firewalld:
+      port: 8080/tcp
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+# Handlers
+  handlers:
+    - name: restart named
+      service:
+        name: named
+        state: restarted
+
+    - name: restart haproxy
+      service:
+        name: haproxy
+        state: restarted
+
+    - name: restart httpd
+      service:
+        name: httpd
+        state: restarted
