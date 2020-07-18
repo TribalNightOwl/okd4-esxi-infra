@@ -1,4 +1,4 @@
-Automatic creation of the ESXi-based VMs and Network to support OKD4 installation
+# Automatic creation of the ESXi-based VMs and Network to support OKD4 installation
 
 
 Craig Robinson wrote a nice guide to install OKD4 on a VMware ESXi machine:
@@ -8,12 +8,12 @@ Craig Robinson wrote a nice guide to install OKD4 on a VMware ESXi machine:
 These terraform files will create the basic infrastructure (virtual machines and network) in the ESXi host described in his document.
 You still have to install the OS and tools he describes in his guide.
 
-# Requirements
+## Requirements
 - Free version of VMware ESXi 6.5 (might work with other versions)
 - Terraform 0.12+
 - terraform-provider-esxi [https://github.com/josenk/terraform-provider-esxi]
 
-# Usage
+## Usage
 - Install the requirements and make sure they are functional
 - Clone this repo:
 `git clone https://github.com/TribalNightOwl/okd4-esxi-infra.git`
@@ -21,7 +21,11 @@ You still have to install the OS and tools he describes in his guide.
  - Everything in vars.tf
  - MAC addresses in main.tf
 - Execute:
+
 `cd okd4-esxi-infra`
+
 `terraform init`
+
 `terraform plan`
+
 `terraform apply`
