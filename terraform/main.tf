@@ -10,7 +10,8 @@ terraform {
 resource "null_resource" "esxi_network" {
   # These triggers are just a workaround to be able to use variables in the destroy provisioner
   triggers = {
-    netname = var.network_name
+    always_run = "${timestamp()}"
+    netname = var.okd_network
     switch  = var.vswitch
     host    = var.esxi_host
   }
@@ -21,8 +22,8 @@ resource "null_resource" "esxi_network" {
 
   provisioner "remote-exec" {
     inline = [
-      "esxcli network vswitch standard portgroup add --portgroup-name=${var.network_name} --vswitch-name=${var.vswitch}",
-      "esxcli network vswitch standard portgroup set -p ${var.network_name} --vlan-id ${var.vlan_id}",
+      "esxcli network vswitch standard portgroup add --portgroup-name=${var.okd_network} --vswitch-name=${var.vswitch}",
+      "esxcli network vswitch standard portgroup set -p ${var.okd_network} --vlan-id ${var.vlan_id}",
     ]
   }
 
@@ -55,7 +56,7 @@ resource "esxi_guest" "okd4-bootstrap" {
 
   network_interfaces {
     mac_address     = "00:50:56:01:01:01"
-    virtual_network = var.network_name
+    virtual_network = var.okd_network
   }
   depends_on = [null_resource.esxi_network]
 }
@@ -80,7 +81,7 @@ resource "esxi_guest" "okd4-machines" {
 
   network_interfaces {
     mac_address     = each.value
-    virtual_network = var.network_name
+    virtual_network = var.okd_network
   }
   depends_on = [null_resource.esxi_network]
 }
@@ -98,8 +99,14 @@ resource "esxi_guest" "okd4-services" {
 
   network_interfaces {
     mac_address     = "00:50:56:01:01:07"
-    virtual_network = var.network_name
+    virtual_network = var.okd_network
   }
+
+  network_interfaces {
+    mac_address     = "00:50:56:01:01:08"
+    virtual_network = var.home_network
+  }
+
   depends_on = [null_resource.esxi_network]
 }
 
@@ -115,8 +122,14 @@ resource "esxi_guest" "okd4-pfsense" {
   virthwver      = "13"
 
   network_interfaces {
-    mac_address     = "00:50:56:01:01:08"
-    virtual_network = var.network_name
+    mac_address     = "00:50:56:01:01:09"
+    virtual_network = var.home_network
   }
+
+  network_interfaces {
+    mac_address     = "00:50:56:01:01:0A"
+    virtual_network = var.okd_network
+  }
+
   depends_on = [null_resource.esxi_network]
 }
