@@ -1,0 +1,73 @@
+---
+- hosts: okd4-services
+  become: yes
+  tasks:
+
+# BIND
+  - name: install bind
+    dnf:
+      name:
+        - bind
+        - bind-utils
+      state: latest
+      update_cache: yes
+
+  - name: Copy named.conf
+    copy:
+      src: ../okd4_files/named.conf
+      dest: /etc/named.conf
+      owner: root
+      group: root
+      mode: '0644'
+    notify: restart named
+
+  - name: Copy named.conf.local
+    copy:
+      src: ../okd4_files/named.conf.local
+      dest: /etc/named/
+      owner: root
+      group: root
+      mode: '0644'
+    notify: restart named
+
+  - name: Create a named zones directory
+    file:
+      path: /etc/named/zones
+      state: directory
+      mode: '0755'
+    notify: restart named
+
+  - name: Copy zone files
+    copy:
+      src: ../okd4_files/{{ item }}
+      dest: /etc/named/zones/
+      owner: root
+      group: root
+      mode: '0644'
+    with_items:
+      - db.192.168.90
+      - db.okd.local
+    notify: restart named
+
+  - name: enable named
+    systemd:
+      name: named
+      state: started
+      enabled: yes
+
+  - name: restart systemctl
+    systemd:
+      daemon_reexec: yes
+
+  - firewalld:
+      port: 53/udp
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+# Handlers
+  handlers:
+    - name: restart named
+      service:
+        name: named
+        state: restarted

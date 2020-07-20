@@ -1,0 +1,63 @@
+---
+- hosts: okd4-services
+  become: no
+  tasks:
+
+# Generate ignition files
+  - name: Delete install directory
+    file:
+      path: install_dir
+      state: absent
+
+  - name: Create a install directory
+    file:
+      path: install_dir
+      state: directory
+      mode: '0755'
+
+  - name: Copy install-config.yaml
+    copy:
+      src: ../okd4_files/install-config.yaml
+      dest: install_dir
+      mode: '0644'
+
+  - name: Create manifests
+    shell: |
+      openshift-install create manifests --dir=install_dir/
+
+  - name: Prevent pods scheduled on control plane
+    lineinfile:
+      path: install_dir/manifests/cluster-scheduler-02-config.yml
+      regexp: 'mastersSchedulable: true'
+      insertafter: '^spec:'
+      line: '  mastersSchedulable: false'
+
+  - name: Create ignition configs
+    shell: |
+      openshift-install create ignition-configs --dir=install_dir/
+
+# host ignition files
+  - name: Create a okd4 directory
+    file:
+      path: /var/www/html/okd4
+      state: directory
+      mode: '0755'
+    become: yes
+
+  - name: Move files
+    shell: |
+      cp -R /home/okdadmin/install_dir/* /var/www/html/okd4/
+      chown -R apache: /var/www/html/
+      chmod -R 755 /var/www/html/
+    become: yes
+
+  - name: Download Fedora CoreOS
+    shell: |
+      cd /var/www/html/okd4/
+      wget https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/32.20200629.3.0/x86_64/fedora-coreos-32.20200629.3.0-metal.x86_64.raw.xz
+      wget https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/32.20200629.3.0/x86_64/fedora-coreos-32.20200629.3.0-metal.x86_64.raw.xz.sig
+      mv fedora-coreos-32.20200629.3.0-metal.x86_64.raw.xz fcos.raw.xz
+      mv fedora-coreos-32.20200629.3.0-metal.x86_64.raw.xz.sig fcos.raw.xz.sig
+      chown -R apache: /var/www/html/
+      chmod -R 755 /var/www/html/
+    become: yes

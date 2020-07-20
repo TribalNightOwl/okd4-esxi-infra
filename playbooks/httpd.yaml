@@ -1,0 +1,44 @@
+---
+- hosts: okd4-services
+  become: yes
+  tasks:
+
+# Apache/HTTP
+  - name: install httpd
+    dnf:
+      name: httpd
+      state: latest
+      update_cache: yes
+
+  - name: enable SELinux http read
+    seboolean:
+      name: httpd_read_user_content
+      state: yes
+      persistent: yes
+
+  - name: Ensure the default Apache port is 8080
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^Listen '
+      insertafter: '^#Listen '
+      line: Listen 8080
+    notify: restart httpd
+
+  - name: enable httpd
+    systemd:
+      name: httpd
+      state: started
+      enabled: yes
+
+  - firewalld:
+      port: 8080/tcp
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+# Handlers
+  handlers:
+    - name: restart httpd
+      service:
+        name: httpd
+        state: restarted

@@ -1,0 +1,64 @@
+---
+- hosts: okd4-services
+  become: yes
+  tasks:
+
+# NFS
+  - name: install nfs-utils
+    dnf:
+      name: nfs-utils
+      state: latest
+      update_cache: yes
+
+  - name: enable nfs-server
+    systemd:
+      name: nfs-server
+      state: started
+      enabled: yes
+
+  - name: enable rpcbind
+    systemd:
+      name: rpcbind
+      state: started
+      enabled: yes
+
+  - name: Create NFS share
+    shell: |
+      mkdir -p /var/nfsshare/registry
+      chmod -R 777 /var/nfsshare
+      chown -R nobody:nobody /var/nfsshare
+      echo '/var/nfsshare 192.168.90.0/24(rw,sync,no_root_squash,no_all_squash,no_wdelay)' | sudo tee /etc/exports
+    become: yes
+    notify: restart nfs-server
+
+  - name: enable SELinux NFS export
+    seboolean:
+      name: nfs_export_all_rw
+      state: yes
+      persistent: yes
+    notify: restart nfs-server
+
+  - firewalld:
+      zone: public
+      service: mountd
+      permanent: yes
+      state: enabled
+
+  - firewalld:
+      zone: public
+      service: rpc-bind
+      permanent: yes
+      state: enabled
+
+  - firewalld:
+      zone: public
+      service: nfs
+      permanent: yes
+      state: enabled
+
+# Handlers
+  handlers:
+    - name: restart nfs-server
+      service:
+        name: nfs-server
+        state: restarted

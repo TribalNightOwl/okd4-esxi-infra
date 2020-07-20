@@ -1,0 +1,12 @@
+---
+- hosts: okd4-services
+  become: yes
+  tasks:
+
+  - name: Download oc tools
+    shell: |
+      wget https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-07-14-153706-ga/openshift-client-linux-4.5.0-0.okd-2020-07-14-153706-ga.tar.gz
+      wget https://github.com/openshift/okd/releases/download/4.5.0-0.okd-2020-07-14-153706-ga/openshift-install-linux-4.5.0-0.okd-2020-07-14-153706-ga.tar.gz
+      tar -zxvf openshift-client-linux-4.5.0-0.okd-2020-07-14-153706-ga.tar.gz
+      tar -zxvf openshift-install-linux-4.5.0-0.okd-2020-07-14-153706-ga.tar.gz
+      mv kubectl oc openshift-install /usr/local/bin/

@@ -1,0 +1,16 @@
+---
+- hosts: okd4-services
+  become: no
+  tasks:
+
+  - name: Download and install jq
+    shell: |
+      wget -O jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+      chmod +x jq
+      mv jq /usr/local/bin/
+    become: yes
+
+  - name: approve CSRs
+    shell: |
+      export KUBECONFIG=~/install_dir/auth/kubeconfig
+      oc get csr -ojson | jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs oc adm certificate approve

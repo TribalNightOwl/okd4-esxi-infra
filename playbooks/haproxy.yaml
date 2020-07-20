@@ -1,0 +1,63 @@
+---
+- hosts: okd4-services
+  become: yes
+  tasks:
+
+# HAProxy
+  - name: install ha-proxy
+    dnf:
+      name: haproxy
+      state: latest
+      update_cache: yes
+
+  - name: enable SELinux HAProxy
+    seboolean:
+      name: haproxy_connect_any
+      state: yes
+      persistent: yes
+
+  - name: Copy HAProxy config
+    copy:
+      src: ../okd4_files/haproxy.cfg
+      dest: /etc/haproxy/haproxy.cfg
+      owner: root
+      group: root
+      mode: '0644'
+    notify: restart haproxy
+
+  - name: enable HAProxy
+    systemd:
+      name: haproxy
+      state: started
+      enabled: yes
+
+  - firewalld:
+      port: 6443/tcp
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+  - firewalld:
+      port: 22623/tcp
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+  - firewalld:
+      service: http
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+  - firewalld:
+      service: https
+      permanent: yes
+      immediate: yes
+      state: enabled
+
+# Handlers
+  handlers:
+    - name: restart haproxy
+      service:
+        name: haproxy
+        state: restarted

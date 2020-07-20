@@ -1,0 +1,9 @@
+---
+- hosts: okd4-services
+  become: no
+  tasks:
+
+  - name: Enable oc bash completion
+    shell: |
+      /usr/local/bin/oc completion bash > /etc/bash_completion.d/oc_bash_completion
+    become: yes

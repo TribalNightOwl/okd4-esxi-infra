@@ -1,6 +1,5 @@
 ---
 - hosts: okd4-services
-  remote_user: okdadmin
   become: yes
   tasks:
   - name: install epel-release
@@ -22,5 +21,11 @@
   - name: install git
     dnf:
       name: git
+      state: latest
+      update_cache: yes
+
+  - name: install tmux
+    dnf:
+      name: tmux
       state: latest
       update_cache: yes
