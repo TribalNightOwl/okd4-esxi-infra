@@ -1,0 +1,15 @@
+---
+- hosts: okd4-services
+  become: no
+  tasks:
+
+  - name: Copy named.conf.local
+    copy:
+      src: ../okd4_files/registry_pv.yaml
+      dest: registry_pv.yaml
+      mode: '0644'
+
+  - name: Enable oc bash completion
+    shell: |
+      export KUBECONFIG=~/install_dir/auth/kubeconfig
+      oc create -f registry_pv.yaml
