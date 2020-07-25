@@ -21,6 +21,9 @@ variable "vswitch" {
     default = "vSwitch0"
 }
 
-variable "network_name" {
+variable "home_network" {
+    default = "VM Network"
+}
+variable "okd_network" {
     default = "OKD"
 }
